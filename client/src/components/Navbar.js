@@ -51,7 +51,7 @@ const Navbar = () => {
                 },
                 {
                     label: (
-                        <Link to="/songs">
+                        <Link to="/uploads">
                             <li className="menu-item">Songs</li>
                         </Link>
                     ),
@@ -85,7 +85,7 @@ const Navbar = () => {
             {user ? (
                 <div className="ul-container">
                     <li className="upload">
-                        <Link to="/songs">Upload</Link>
+                        <Link to="/uploads">Upload</Link>
                     </li>
                     <li className="profile">
                         <Dropdown

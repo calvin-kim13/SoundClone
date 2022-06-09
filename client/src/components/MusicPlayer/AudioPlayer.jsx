@@ -16,10 +16,9 @@ const AudioPlayer = ({
     r,
     setR,
     currentPlayer,
-    setCurrentSong,
 }) => {
     // State
-    console.log(singlePL)
+
     const [trackIndex, setTrackIndex] = useState(0)
     const [trackProgress, setTrackProgress] = useState(0)
     const [isPlaying, setIsPlaying] = useState(false)
@@ -41,13 +40,9 @@ const AudioPlayer = ({
     })
     useEffect(() => {
         if (singlePL.songs) setSong(singlePL.songs[trackIndex])
-        console.log(singlePL)
-        // const { title, artist, color, image, audioSrc } = tracks[trackIndex]
-        console.log(title)
     }, [trackIndex])
 
     // Refs
-    console.log(link)
     const audioRef = useRef(new Audio(link))
     const intervalRef = useRef()
     audioRef.current.volume = volume
@@ -159,14 +154,13 @@ const AudioPlayer = ({
     const onVolumeChange = (e) => {
         const { target } = e
         const newVolume = +target.value
-        // console.log(newVolume)
+
         if (newVolume) {
             setVolume(newVolume)
             audioRef.current.volume = newVolume || 0.01
         }
     }
 
-    // const [songInfo, setSongInfo] = useState(tracks[trackIndex])
     useEffect(() => {
         if (isPlaying) {
             audioRef.current.play()
@@ -190,17 +184,15 @@ const AudioPlayer = ({
         }
     })
     useEffect(() => {
-        console.log("193", playlistSong, link, song.link)
         audioRef.current.pause()
-        audioRef.current = new Audio(playlistSong)
-        audioRef.current.load()
+        audioRef.current = new Audio(link)
         audioRef.current.play()
         setSelectedSong(false)
-    }, [selectedSong, playlistSong, trackIndex])
+    }, [selectedSong, playlistSong, link, trackIndex])
 
     useEffect(() => {
         if (!audioRef.current.paused) audioRef.current.pause()
-        audioRef.current = new Audio(playlistSong)
+        audioRef.current = new Audio(link)
 
         setTrackProgress(audioRef.current.currentTime)
         if (isReady.current) {
@@ -211,7 +203,7 @@ const AudioPlayer = ({
             // Set the isReady ref as true for the next pass
             isReady.current = true
         }
-    }, [trackIndex])
+    }, [trackIndex, link])
 
     useEffect(() => {
         // Pause and clean up on unmount
@@ -256,13 +248,12 @@ const AudioPlayer = ({
     sDisplay = s < 10 ? "0" + s : s
 
     const endTime = `${hDisplay}${mDisplay}${sDisplay}`
-
-    currentPlayer.current.src = audioRef.current.src
+    if (currentPlayer.current) currentPlayer.current.src = audioRef.current.src
 
     return (
         <div className="audio-player">
             <div className="track-info">
-                <h2 className="title">{newTitle}</h2>
+                <h2 className="title">{song.title}</h2>
                 <h3 className="artist">{song.artist}</h3>
                 <AudioControls
                     isPlaying={isPlaying}

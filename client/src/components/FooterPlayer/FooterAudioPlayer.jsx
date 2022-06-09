@@ -20,11 +20,13 @@ const AudioPlayer = ({
     songInfo,
     trackIndex,
     getTrackIndex,
+    trackProgress,
+    setTrackProgress,
 }) => {
     // State
     const location = useLocation()
     //const [trackIndex, setTrackIndex] = useState(0)
-    const [trackProgress, setTrackProgress] = useState(0)
+
     const [volume, setVolume] = useState(0.2)
     const [song, setSong] = useState({ title: "", artist: "" })
     // Destructure for conciseness
@@ -118,8 +120,6 @@ const AudioPlayer = ({
 
                 if (isReady.current && !isPlaying && count < 1) {
                     count++
-                    //setIsPlaying(true)
-                    // isReady.current = false
                 } else {
                     // Set the isReady ref as true for the next pass
                     isReady.current = true
@@ -136,8 +136,6 @@ const AudioPlayer = ({
                 }
                 if (isReady.current && !isPlaying && count < 1) {
                     count++
-                    //setIsPlaying(true)
-                    // isReady.current = false
                 } else {
                     // Set the isReady ref as true for the next pass
                     isReady.current = true
@@ -245,15 +243,12 @@ const AudioPlayer = ({
                     ) : (
                         <h2 className="footer-artist">{songInfo.artist}</h2>
                     )}
-
-                    {/* <h3 className="footer-artist">{artist}</h3> */}
                 </div>
                 <div id="startFooterTimer">{displayTime}</div>
                 <input
                     type="range"
                     value={trackProgress}
                     max={duration ? duration : `${duration}`}
-                    // time={currentTime}
                     className="footer-progress"
                     id="footerTimerBar"
                     onChange={(e) => onScrub(e.target.value)}
@@ -280,7 +275,6 @@ const AudioPlayer = ({
                         min={0.1}
                         step={0.01}
                         sx={{
-                            // color: theme.palette.mode === 'dark' ? '#fff' : 'rgba(0,0,0,0.87)',
                             "& .MuiSlider-track": {
                                 border: "none",
                             },

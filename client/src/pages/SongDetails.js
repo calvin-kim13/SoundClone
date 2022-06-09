@@ -39,6 +39,8 @@ const SongDetails = ({
     setIsPlaying,
     getSongInfo,
     isDetailsPlaying,
+    trackProgress,
+    setTrackProgress,
 }) => {
     const username = localStorage.getItem("username")
     const [addComment, { error }] = useMutation(ADD_COMMENT)
@@ -46,6 +48,7 @@ const SongDetails = ({
     const { loading, data } = useQuery(GET_SONG, {
         variables: { songId: songId },
     })
+    const [waveref, setWaveref] = useState()
     const recSongs = []
     const [list, setList] = useState([])
     const [commentText, setCommentText] = useState("")
@@ -87,14 +90,6 @@ const SongDetails = ({
         },
     )
     const usersPlaylists = userPlaylists?.userPlaylists || []
-    const uPL = Object.values(usersPlaylists)
-    console.log(userPlaylists)
-
-    useEffect(() => {
-        console.log(uPL)
-    }, [usersPlaylists])
-
-    // const [newPlaylist, setNewPlaylist] = useState()
 
     function registerUserCallback() {
         console.log("callback hit")
@@ -163,14 +158,6 @@ const SongDetails = ({
     }
 
     const handleCancel = () => {
-        // setSong({
-        //     title: "",
-        //     genre: "",
-        //     username: username,
-        //     artist: "",
-        //     filename: "",
-        //     link: "",
-        // });
         setIsModalVisible(false)
     }
 
@@ -187,12 +174,11 @@ const SongDetails = ({
 
     useEffect(() => {
         if (Object.keys(querySong).length !== 0) getSongInfo(querySong)
-        currentPlayer.current.src = querySong.link
+        if (currentPlayer.current) currentPlayer.current.src = querySong.link
     }, [querySong.link])
 
     useEffect(() => {
         if (querySong.link !== undefined) {
-            // console.log(audio.current)
             setCurrentSong(querySong.link)
         }
     }, [querySong.link])
@@ -276,11 +262,9 @@ const SongDetails = ({
                         </h2>
                     </div>
                     <Waveform
-                        querySong={querySong}
                         isDetailsPlaying={isDetailsPlaying}
                         isPlaying={isPlaying}
                         setIsPlaying={setIsPlaying}
-                        song={querySong}
                         audio={currentPlayer}
                     />
                     <div
