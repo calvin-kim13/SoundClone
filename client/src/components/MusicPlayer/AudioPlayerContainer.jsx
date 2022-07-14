@@ -13,10 +13,8 @@ const AudioPlayerContainer = ({
     singlePL,
 }) => {
     const [songs, setSongs] = useState()
-    // console.log(localStorage)
 
     let newPlaylist = singlePL || JSON.parse(localStorage.getItem("singlePL"))
-    console.log(Object.values(newPlaylist))
     return (
         <div className="PlaylistPlayer">
             {Object.values(newPlaylist).length !== 0 ? (
@@ -31,7 +29,7 @@ const AudioPlayerContainer = ({
                     currentPlayer={currentPlayer}
                 />
             ) : (
-                <div style={{ color: "white", fontWeight: "bolder" }}>
+                <div style={{ fontWeight: "bolder" }}>
                     No playlist selected!
                 </div>
             )}

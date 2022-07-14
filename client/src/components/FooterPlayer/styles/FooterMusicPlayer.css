@@ -2,10 +2,18 @@ body {
     height: 100vh;
 }
 
+.prev,
+.next,
+.play,
+.pause {
+    margin-top: 5px;
+    cursor: pointer;
+}
+
 .footer-audio-player {
     bottom: 0;
-    background-color: rgb(179, 179, 179);
-    height: 70px;
+    background-color: #ec994b;
+    height: 50px;
     position: fixed;
     z-index: 10000;
 }
@@ -28,12 +36,12 @@ body {
 .footer-audio-controls button {
     color: black;
     padding: 5px;
+    background-color: transparent;
 }
 
 .musicianTrack {
     margin: 0 10px;
     width: 15%;
-    text-align: center;
 }
 
 .musicianTrack h2 {

@@ -1,9 +1,8 @@
-import { SearchBarContext } from "../../context/searchBarContext"
 import "./styles/DashResults.css"
-import { useContext } from "react"
 import { PageHeader } from "antd"
 import DashResultCard from "./DashResultCard"
 import { useNavigate } from "react-router-dom"
+import SearchIcon from "@mui/icons-material/Search"
 
 const DashResults = ({
     dashSearchResults,
@@ -12,22 +11,34 @@ const DashResults = ({
     currentPlayer,
     setIsPlaying,
     getSongInfo,
+    setSinglePL,
 }) => {
     let searchResults =
         dashSearchResults || JSON.parse(localStorage.getItem("searchResults"))
-    const { searchBar } = useContext(SearchBarContext)
     const navigate = useNavigate()
+    const searchResult = localStorage.getItem("searchResult")
 
     return (
         <div className="dash-result-container">
             <PageHeader
                 className="site-page-header"
-                onBack={() => navigate(-1)}
-                title={`Search results for "${searchBar}"`}
+                onBack={() => {
+                    navigate("/")
+                }}
+                title={`Search results for "${searchResult}"`}
             />
-
+            {searchResults.length === 0 && (
+                <div className="no-result-container">
+                    <SearchIcon
+                        style={{ fontSize: "7rem" }}
+                        className="no-result-icon"
+                    />
+                    <h2 className="no-result">{`Sorry, there were no results for "${searchResult}"`}</h2>
+                </div>
+            )}
             {searchResults.map((searchItem) => (
                 <DashResultCard
+                    setSinglePL={setSinglePL}
                     getSongInfo={getSongInfo}
                     setIsPlaying={setIsPlaying}
                     setCurrentSong={setCurrentSong}

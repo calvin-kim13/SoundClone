@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react"
 import { List, Avatar, Skeleton, Divider } from "antd"
-import InfiniteScroll from "react-infinite-scroll-component"
 import { DELETE_COMMENT } from "../utils/mutations/commentMutations"
 import { useMutation } from "@apollo/client"
-import { FaTrashAlt } from "react-icons/fa"
-
+import { DeleteOutlined } from "@ant-design/icons"
+import { message } from "antd"
 const CommentSection = ({ comments, songId }) => {
     const username = localStorage.getItem("username")
     const token = localStorage.getItem("token")
@@ -33,9 +32,9 @@ const CommentSection = ({ comments, songId }) => {
                     commentAuthor: event.currentTarget.name,
                 },
             })
+            await message.success("Successfully removed comment.")
         } catch (err) {
-            //TODO: Add error handling.
-            console.log(err)
+            message.error("Error removing comment.")
         }
     }
 
@@ -52,49 +51,36 @@ const CommentSection = ({ comments, songId }) => {
                 border: "1px solid rgba(140, 140, 140, 0.35)",
             }}
         >
-            <InfiniteScroll
-                dataLength={data.length}
-                next={loadMoreData}
-                hasMore={data.length < 50}
-                loader={
-                    <Skeleton
-                        avatar
-                        paragraph={{
-                            rows: 1,
-                        }}
-                        active
-                    />
-                }
-                endMessage={<Divider plain>It is all, nothing more 🤐</Divider>}
-                scrollableTarget="scrollableDiv"
-            >
-                <List
-                    dataSource={data}
-                    renderItem={(item) => (
-                        <List.Item>
-                            <List.Item.Meta
-                                style={{ width: "10%" }}
-                                avatar={<Avatar src="" />}
-                                title={
-                                    <a href="https://ant.design">
-                                        {item.commentAuthor}
-                                    </a>
-                                }
-                            />
-                            <div style={{ marginRight: 10, width: "70%" }}>
-                                {item.commentText}
-                            </div>
-                            <button
-                                id={item._id}
-                                name={item.commentAuthor}
-                                onClick={removeCommentHandler}
-                            >
-                                <FaTrashAlt />
-                            </button>
-                        </List.Item>
-                    )}
-                />
-            </InfiniteScroll>
+            <List
+                dataSource={data}
+                renderItem={(item) => (
+                    <List.Item>
+                        <List.Item.Meta
+                            style={{ width: "10%" }}
+                            avatar={<Avatar src="" />}
+                            title={
+                                <a href="https://ant.design">
+                                    {item.commentAuthor}
+                                </a>
+                            }
+                        />
+                        <div style={{ marginRight: 10, width: "70%" }}>
+                            {item.commentText}
+                        </div>
+                        <button
+                            id={item._id}
+                            name={item.commentAuthor}
+                            onClick={removeCommentHandler}
+                            style={{
+                                backgroundColor: "#FFFFFF",
+                                cursor: "pointer",
+                            }}
+                        >
+                            <DeleteOutlined style={{ fontSize: "1.2rem" }} />
+                        </button>
+                    </List.Item>
+                )}
+            />
         </div>
     )
 }

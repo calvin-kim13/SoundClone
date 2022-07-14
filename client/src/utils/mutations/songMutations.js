@@ -3,6 +3,7 @@ export const DELETE_SONG = gql`
     mutation removeSong($songId: String!, $token: String!, $key: String!) {
         removeSong(songId: $songId, token: $token, key: $key) {
             title
+            cover
             genre
             link
             artist

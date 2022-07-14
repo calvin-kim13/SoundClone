@@ -1,194 +1,318 @@
-import { useState, useEffect } from "react"
-import AudioPlayerContainer from "../components/MusicPlayer/AudioPlayerContainer"
-import { AiFillCloseCircle } from "react-icons/ai"
-import "./styles/Playlists.css"
-import { Row, Col } from "antd"
-import { useQuery } from "@apollo/client"
-import { GET_USER_PLAYLIST } from "../utils/queries/songQueries"
-import { useLocation } from "react-router-dom"
+import { useState, useEffect } from "react";
+import { DeleteOutlined } from "@ant-design/icons";
+import "./styles/Playlists.scss";
+import "../components/styles/PlaylistList.scss";
+import "../components/Dashboard/styles/Dashboard2.scss";
+import { useQuery } from "@apollo/client";
+import { GET_USER_PLAYLIST } from "../utils/queries/songQueries";
+import { useLocation } from "react-router-dom";
+import PlaylistList from "../components/PlaylistLists";
+import { Box, CircularProgress } from "@mui/material";
+import playlistIcon from "../assets/playlist.png";
+import { useMutation } from "@apollo/client";
+import { REMOVE_PLAYLIST } from "../utils/mutations/playlistMutations";
+import Media from "react-media";
+import { message, Empty, Drawer } from "antd";
+import right from "../assets/right.png";
+import { ReactComponent as Close } from "../assets/close.svg";
 
-const Playlists = ({ currentPlayer }) => {
-    const [singlePL, setSinglePL] = useState([])
-    const username = localStorage.getItem("username")
-    const [playlistClicked, setPlaylistClicked] = useState(false)
-    const [playlistSong, setPlaylistSong] = useState()
-    const [selectedSong, setSelectedSong] = useState(false)
-    const [newTitle, setTitle] = useState()
+const Playlists = ({
+  currentPlayer,
+  singlePL,
+  setSinglePL,
+  setIsPlaying,
+  isPlaying,
+  currentSong,
+  getSongInfo,
+  setCurrentSong,
+  trackIndex,
+  getTrackIndex,
+}) => {
+  const [removePlaylist, { error }] = useMutation(REMOVE_PLAYLIST);
+  const token = localStorage.getItem("token");
+  const [currentTarget, setCurrentTarget] = useState(null);
+  const username = localStorage.getItem("username");
+  const [playlistClicked, setPlaylistClicked] = useState(false);
+  const [title, setPlTitle] = useState("");
+  const [playlistSong, setPlaylistSong] = useState();
+  const [selectedSong, setSelectedSong] = useState(false);
+  const [newTitle, setTitle] = useState();
+  const [activeState, setActiveState] = useState(-1);
+  const [deleting, setDeleting] = useState(false);
+  const [r, setR] = useState(false);
+  const location = useLocation();
 
-    const [r, setR] = useState(false)
-    const location = useLocation()
-    let audioList = []
+  const [visible, setVisible] = useState(false);
+  const showDrawer = () => {
+    setVisible(!visible);
+  };
 
-    const {
-        loading: playlistloading,
-        data,
-        refetch,
-    } = useQuery(GET_USER_PLAYLIST, {
-        variables: { owner: username },
-    })
-    let currentPlaylists = data?.userPlaylists || []
-    useEffect(() => {
-        if (data !== undefined)
-            localStorage.setItem("playlists", JSON.stringify(currentPlaylists))
-    }, [currentPlaylists])
+  const {
+    loading: playlistloading,
+    data,
+    refetch,
+  } = useQuery(GET_USER_PLAYLIST, {
+    variables: { owner: username },
+  });
+  let currentPlaylists = data?.userPlaylists || [];
 
-    useEffect(() => {
-        return setPlaylistClicked(false) && setSinglePL([])
-    }, [])
+  useEffect(() => {
+    if (data !== undefined)
+      localStorage.setItem("playlists", JSON.stringify(currentPlaylists));
+  }, [currentPlaylists]);
 
-    useEffect(() => {
-        const fetchPlaylists = async () => {
-            await refetch()
-        }
-        fetchPlaylists()
-    }, [location.pathname])
+  useEffect(() => {
+    return setPlaylistClicked(false) && setSinglePL([]);
+  }, []);
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      await refetch();
+    };
+    fetchPlaylists();
+  }, [location.pathname]);
 
-    useEffect(() => {
-        localStorage.setItem("singlePL", JSON.stringify(singlePL))
-    }, [singlePL])
+  useEffect(() => {
+    localStorage.setItem("singlePL", JSON.stringify(singlePL));
+  }, [singlePL]);
 
-    const switchPlaylist = (e) => {
-        e.preventDefault()
-        setPlaylistClicked(true)
-        for (let i = 0; i < currentPlaylists.length; i++) {
-            if (currentPlaylists[i]._id === e.currentTarget.id) {
-                setSinglePL(currentPlaylists[i])
-            }
-        }
+  const switchPlaylist = (e) => {
+    e.preventDefault();
+    setPlTitle(e.currentTarget.outerText);
+    setPlaylistClicked(true);
+
+    for (let i = 0; i < currentPlaylists.length; i++) {
+      if (currentPlaylists[i]._id === e.currentTarget.id) {
+        setCurrentTarget(e.currentTarget.id);
+        setSinglePL(currentPlaylists[i]);
+      }
     }
+  };
+  useEffect(() => {
+    if (currentTarget)
+      for (let each of currentPlaylists)
+        if (each._id === currentTarget) setSinglePL(each);
+  }, [currentPlaylists]);
 
-    const handleClick = (e) => {
-        e.preventDefault()
-        if (setPlaylistSong !== undefined && selectedSong !== undefined) {
-            setSelectedSong(true)
-            setPlaylistSong(e.currentTarget.name)
-            setTitle(e.currentTarget.title)
-            let title = e.currentTarget.parentNode
-            let find = document.querySelectorAll(".active")
-            find.forEach((find) => {
-                find.classList.remove("active")
-            })
-            title.classList.add("active")
-            setR(true)
-        }
+  const handleDelete = async (event, playlist) => {
+    setDeleting(true);
+    event.preventDefault();
+    try {
+      await removePlaylist({
+        variables: {
+          playlistId: playlist._id,
+          token: token,
+        },
+      });
+      await message.loading("Removing playlist.");
+      await refetch();
+      await message.success("Playlist removed.");
+    } catch (err) {
+      console.log(err);
+      message.error("Error removing playlist.");
     }
+    setDeleting(false);
+  };
 
-    return playlistloading ? (
-        <div>Loading...</div>
-    ) : (
-        <div style={{ marginBottom: 100, height: "100vh" }}>
-            <div style={{ display: "flex" }}>
-                <aside className="playlistNames">
-                    <h2
-                        style={{
-                            color: "white",
-                            fontWeight: "bolder",
-                        }}
-                    >
-                        Playlists:
-                    </h2>
-                    {currentPlaylists.map((playlist) => {
-                        return (
-                            <button
-                                style={{
-                                    color: "white",
-                                    fontWeight: "bolder",
-                                    padding: 5,
-                                }}
-                                key={playlist.title}
-                                id={playlist._id}
-                                onClick={switchPlaylist}
-                                className="playlist-List"
-                            >
-                                {playlist.plTitle}
-                            </button>
-                        )
-                    })}
-                </aside>
-                <div className="Playlist-container">
-                    <AudioPlayerContainer
-                        playlistSong={playlistSong}
-                        selectedSong={selectedSong}
-                        setSelectedSong={setSelectedSong}
-                        newTitle={newTitle}
-                        r={r}
-                        setR={setR}
-                        currentPlayer={currentPlayer}
-                        singlePL={singlePL}
-                    />
-                    <div className="item">
-                        <div className="content">
-                            <h2 className="playlist-title">Playlist Name:</h2>
-                            <div className="headers">
-                                <Row>
-                                    <Col span={8}>
-                                        <h2 className="playlist-header">
-                                            Title
-                                        </h2>
-                                    </Col>
-                                    <Col span={8}>
-                                        <h2 className="playlist-header">
-                                            Artist
-                                        </h2>
-                                    </Col>
-                                    <Col span={8}>
-                                        <h2 className="playlist-header">
-                                            Remove
-                                        </h2>
-                                    </Col>
-                                </Row>
-                            </div>
-                            {playlistClicked ? (
-                                singlePL.songs.map((song) => {
-                                    console.log(playlistClicked)
-                                    return (
-                                        <Row key={song._id}>
-                                            <button
-                                                name={song.link}
-                                                title={song.title}
-                                                onClick={handleClick}
-                                            >
-                                                <Col span={8}>
-                                                    <h2 className="playlist-header">
-                                                        {song.title}
-                                                    </h2>
-                                                </Col>
-                                            </button>
-                                            <Col span={8}>
-                                                <h2 className="playlist-header">
-                                                    {song.artist}
-                                                </h2>
-                                            </Col>
-                                            <Col span={8}>
-                                                <button id="removeBtn">
-                                                    <div>
-                                                        <span
-                                                            className="trashcan"
-                                                            style={{
-                                                                color: "red",
-                                                                marginTop:
-                                                                    "7px",
-                                                            }}
-                                                        >
-                                                            <AiFillCloseCircle />
-                                                        </span>
-                                                    </div>
-                                                </button>
-                                            </Col>
-                                        </Row>
-                                    )
-                                })
-                            ) : (
-                                <div style={{ color: "white" }}>
-                                    NO PLAYLIST DATA
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
+  return playlistloading ? (
+    <div>
+      {" "}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: "14rem",
+        }}
+      >
+        <CircularProgress style={{ color: "orange" }} />
+      </Box>
+    </div>
+  ) : (
+    <Media query={{ maxWidth: 1000 }}>
+      {(matches) =>
+        matches ? (
+          <div className="playlist-container">
+            <div to="#" className="playlist-menu">
+              <div
+                style={{
+                  padding: "1rem",
+                }}
+              >
+                <img
+                  id="show-playlists-btn"
+                  onClick={showDrawer}
+                  src={right}
+                  alt="Right Arrow"
+                />
+              </div>
+              {/* <FaIcons.FaBars onClick={showDrawer} /> */}
             </div>
-        </div>
-    )
-}
+            <Drawer
+              closeIcon={<Close style={{ height: "1.5rem" }} />}
+              width="220px"
+              placement="left"
+              onClose={showDrawer}
+              visible={visible}
+            >
+              <div>
+                <h2>Playlists:</h2>
+                {currentPlaylists.length === 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      padding: "2rem 0",
+                    }}
+                  >
+                    <Empty description="No playlists created" />
+                  </div>
+                )}
+                {currentPlaylists.map((playlist, index) => {
+                  return (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <div
+                        className={`playlist-button ${
+                          index === activeState ? "active" : null
+                        }`}
+                        key={playlist.plTitle}
+                        id={playlist._id}
+                        onClick={(e) => {
+                          showDrawer();
+                          switchPlaylist(e);
+                          setActiveState(index);
+                        }}
+                      >
+                        <div id={playlist._id} className="play-title">
+                          <img src={playlistIcon} alt="Playlist" />
+                          {playlist.plTitle}
+                        </div>
+                      </div>
+                      <div>
+                        <DeleteOutlined
+                          onClick={(event) => handleDelete(event, playlist)}
+                          style={{
+                            fontSize: "1.2rem",
+                            padding: ".5rem .8rem",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </Drawer>
+            <div className="content">
+              {playlistClicked ? (
+                <PlaylistList
+                  refetch={refetch}
+                  setDeleting={setDeleting}
+                  singlePL={singlePL}
+                  currentPlayer={currentPlayer}
+                  data={singlePL}
+                  setIsPlaying={setIsPlaying}
+                  isPlaying={isPlaying}
+                  currentSong={currentSong}
+                  getSongInfo={getSongInfo}
+                  setCurrentSong={setCurrentSong}
+                  trackIndex={trackIndex}
+                  getTrackIndex={getTrackIndex}
+                />
+              ) : (
+                <div className="no-playlist-selected">
+                  <Empty description="No playlist selected" />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 4fr" }}>
+            <div className="playlist-name-container">
+              <h2>Playlists:</h2>
+              {currentPlaylists.length === 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "2rem 0",
+                  }}
+                >
+                  <Empty description="No playlists created" />
+                </div>
+              )}
+              {currentPlaylists.map((playlist, index) => {
+                return (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <div
+                      className={`playlist-button ${
+                        index === activeState ? "active" : null
+                      }`}
+                      key={playlist.plTitle}
+                      id={playlist._id}
+                      onClick={(e) => {
+                        switchPlaylist(e);
+                        setActiveState(index);
+                      }}
+                    >
+                      <div id={playlist._id} className="play-title">
+                        <img src={playlistIcon} alt="Playlist" />
+                        {playlist.plTitle}
+                      </div>
+                    </div>
+                    <div>
+                      <DeleteOutlined
+                        onClick={(event) => handleDelete(event, playlist)}
+                        style={{
+                          fontSize: "1.2rem",
+                          padding: ".5rem .8rem",
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-export default Playlists
+            <div className="playlist-container">
+              <div className="content">
+                {playlistClicked ? (
+                  <PlaylistList
+                    refetch={refetch}
+                    setDeleting={setDeleting}
+                    singlePL={singlePL}
+                    currentPlayer={currentPlayer}
+                    data={singlePL}
+                    setIsPlaying={setIsPlaying}
+                    isPlaying={isPlaying}
+                    currentSong={currentSong}
+                    getSongInfo={getSongInfo}
+                    setCurrentSong={setCurrentSong}
+                    trackIndex={trackIndex}
+                    getTrackIndex={getTrackIndex}
+                  />
+                ) : (
+                  <div className="no-playlist-selected">
+                    <Empty description="No playlist selected" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </Media>
+  );
+};
+
+export default Playlists;

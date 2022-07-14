@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react"
+import orange from "../assets/orange.png"
 import { AiFillPlusCircle } from "react-icons/ai"
 import {
     List,
@@ -9,9 +10,10 @@ import {
     Input,
     Space,
     Button,
+    notification,
 } from "antd"
 import "./styles/Slider.css"
-import { Link, useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import {
     GET_SONG,
     GET_GENRES,
@@ -20,7 +22,7 @@ import {
 import { useQuery, useMutation } from "@apollo/client"
 import AudioSpectrum from "react-audio-spectrum"
 import { ADD_COMMENT } from "../utils/mutations/commentMutations"
-import shakeygraves from "../assets/shakeygraves.jpg"
+
 import CommentSection from "../components/CommentSection"
 import Waveform from "../components/Wavesurfer"
 import "../components/styles/CommentSection.css"
@@ -31,6 +33,11 @@ import {
     ADDTOPLAYLIST,
 } from "../utils/mutations/playlistMutations"
 import "./styles/SongDetail.css"
+import { ReactComponent as Share } from "../assets/share.svg"
+import { ReactComponent as Add } from "../assets/add.svg"
+import playlistIcon from "../assets/playlist.png"
+import { ReactComponent as CreateIcon } from "../assets/create.svg"
+import { CircularProgress, Box } from "@mui/material"
 
 const SongDetails = ({
     setCurrentSong,
@@ -39,8 +46,7 @@ const SongDetails = ({
     setIsPlaying,
     getSongInfo,
     isDetailsPlaying,
-    trackProgress,
-    setTrackProgress,
+    setSinglePL,
 }) => {
     const username = localStorage.getItem("username")
     const [addComment, { error }] = useMutation(ADD_COMMENT)
@@ -48,7 +54,7 @@ const SongDetails = ({
     const { loading, data } = useQuery(GET_SONG, {
         variables: { songId: songId },
     })
-    const [waveref, setWaveref] = useState()
+    let navigate = useNavigate()
     const recSongs = []
     const [list, setList] = useState([])
     const [commentText, setCommentText] = useState("")
@@ -83,16 +89,16 @@ const SongDetails = ({
     }
 
     // CREATE-ADD TO PLAYLIST MODAL
-    const { loading: playlistloading, data: userPlaylists } = useQuery(
-        GET_USER_PLAYLIST,
-        {
-            variables: { owner: username },
-        },
-    )
+    const {
+        loading: playlistloading,
+        data: userPlaylists,
+        refetch,
+    } = useQuery(GET_USER_PLAYLIST, {
+        variables: { owner: username },
+    })
     const usersPlaylists = userPlaylists?.userPlaylists || []
 
     function registerUserCallback() {
-        console.log("callback hit")
         const hide = message.loading("Creating playlist...", 0)
         setTimeout(hide, 1100)
     }
@@ -114,6 +120,7 @@ const SongDetails = ({
     })
 
     const success = async () => {
+        await refetch()
         await message.loading("Uploading playlist...")
         await message.success("Successfully added song to playlist!")
     }
@@ -180,6 +187,7 @@ const SongDetails = ({
     useEffect(() => {
         if (querySong.link !== undefined) {
             setCurrentSong(querySong.link)
+            setSinglePL([])
         }
     }, [querySong.link])
 
@@ -211,28 +219,49 @@ const SongDetails = ({
         isLoaded.current = true
     })
     if (loading) {
-        return <div>Loading...</div>
+        return (
+            <div>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginTop: "4rem",
+                    }}
+                >
+                    <CircularProgress style={{ color: "orange" }} />
+                </Box>
+            </div>
+        )
+    }
+    const openNotificationWithIcon = (type) => {
+        notification[type]({
+            message: "Song URL copied to clipboard!",
+        })
+    }
+    const handleRecSongClick = (item) => {
+        navigate(`/song/${item._id}`)
     }
     return (
         <div
             style={{
-                backgroundColor: "#141414",
+                backgroundColor: "var(--light)",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 flexWrap: "wrap",
-                marginBottom: 100,
-                paddingBottom: 100,
+
+                paddingBottom: 55,
             }}
         >
             <div
+                className="comment-area"
                 style={{
                     display: "flex",
                     flexDirection: "row",
                     justifyContent: "center",
                     flexWrap: "wrap",
-                    backgroundColor: "#434343",
-                    width: "100%",
+                    backgroundColor: "#fff",
                 }}
             >
                 <div
@@ -241,25 +270,37 @@ const SongDetails = ({
                             "linear-gradient(315deg, hsla(29, 81%, 61%, 1) 0%, hsla(0, 0%, 0%, 1) 86%)",
                         display: "flex",
                         flexWrap: "wrap",
-                        width: "85%",
+                        width: "100%",
                         justifyContent: "center",
                     }}
                 >
                     <div
                         style={{
                             zIndex: 1000,
-                            margin: 10,
+                            padding: 10,
                             marginBottom: 0,
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
                         }}
                     >
-                        <img src={shakeygraves} alt="Album Cover" />
-                        <h1 style={{ color: "white" }}>{querySong.title}</h1>
-                        <h2 style={{ color: "white" }}>
-                            By {querySong.artist}
+                        <img
+                            src={querySong.cover ? querySong.cover : orange}
+                            style={{ width: "200px", height: "200px" }}
+                            alt="Album Cover"
+                        />
+                        <h2 style={{ color: "white", marginTop: "1rem" }}>
+                            {querySong.title}
                         </h2>
+                        <h3
+                            style={{
+                                color: "white",
+                                opacity: ".7",
+                                marginTop: "-.7rem",
+                            }}
+                        >
+                            By {querySong.artist}
+                        </h3>
                     </div>
                     <Waveform
                         isDetailsPlaying={isDetailsPlaying}
@@ -269,7 +310,8 @@ const SongDetails = ({
                     />
                     <div
                         style={{
-                            marginTop: -50,
+                            marginTop: -40,
+                            width: "100%",
                             position: "relative",
                             display: "flex",
                             flexWrap: "wrap",
@@ -293,12 +335,17 @@ const SongDetails = ({
                     alignItems: "center",
                 }}
             >
-                <div style={{ display: "flex", flexDirection: "column" }}></div>
+                <div
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                    }}
+                ></div>
             </div>
             <div
+                className="comment-area"
                 style={{
                     display: "flex",
-                    width: "100%",
                     flexWrap: "wrap",
                     justifyContent: "center",
                 }}
@@ -306,11 +353,12 @@ const SongDetails = ({
                 <div
                     className="comment-details"
                     style={{
-                        background: "#F1EEE9",
-                        // width: "62%",
+                        background: "#fff",
+
                         display: "flex",
                         flexWrap: "wrap",
                         flexDirection: "column",
+                        // border: "1px solid grey",
                     }}
                 >
                     <div
@@ -318,27 +366,78 @@ const SongDetails = ({
                             display: "flex",
                             justifyContent: "space-between",
                             flexWrap: "wrap",
+                            border: "1px solid rgb(218, 218, 218)",
                         }}
                     >
                         <div style={{ margin: 10, marginLeft: 20 }}>
-                            Comments
+                            {querySong.comments.length === 1 &&
+                                `${querySong.comments.length} comment`}
+                            {querySong.comments.length === 0 &&
+                                `${querySong.comments.length} comments`}
+                            {querySong.comments.length > 1 &&
+                                `${querySong.comments.length} comments`}
                         </div>
-                        <button
-                            style={{ margin: 10 }}
-                            onClick={() => {
-                                navigator.clipboard.writeText(
-                                    window.location.href,
-                                )
-                                alert("Song URL copied to clipboard!")
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
                             }}
                         >
-                            Share
-                        </button>
-                        <button style={{ margin: 10 }} onClick={showModal}>
-                            Add to Playlist
-                        </button>
+                            <button
+                                style={{
+                                    margin: 10,
+                                    border: "1px solid grey",
+                                    padding: "3px 7px",
+                                    fontSize: ".7rem",
+                                    borderRadius: "4px",
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}
+                                onClick={() => {
+                                    navigator.clipboard.writeText(
+                                        window.location.href,
+                                    )
+                                    openNotificationWithIcon("success")
+                                }}
+                                className="detail-more-btn"
+                            >
+                                <Share
+                                    style={{
+                                        width: "1rem",
+                                        height: "1rem",
+                                        marginRight: ".3rem",
+                                    }}
+                                />{" "}
+                                Share
+                            </button>
+                            <button
+                                style={{
+                                    margin: 10,
+                                    border: "1px solid grey",
+                                    padding: "3px 7px",
+                                    fontSize: ".7rem",
+                                    borderRadius: "4px",
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}
+                                onClick={showModal}
+                                className="detail-more-btn"
+                            >
+                                <Add
+                                    style={{
+                                        width: "1rem",
+                                        height: "1rem",
+                                        marginRight: ".3rem",
+                                    }}
+                                />
+                                Add to Playlist
+                            </button>
+                        </div>
                         <Modal
-                            title="Select Playlist"
+                            title="Create or Select a Playlist"
                             className="select-list"
                             visible={isModalVisible}
                             onCancel={handleCancel}
@@ -350,31 +449,43 @@ const SongDetails = ({
                             ]}
                         >
                             <Space style={{ display: "block" }}>
+                                <h4>Create Playlist:</h4>
                                 <div className="create-plist">
                                     <Input
                                         onChange={onChange}
                                         className="create-playlistinput"
                                         name="playlistname"
                                         value={values.playlistname}
-                                        placeholder="Create Playlist"
+                                        placeholder="Playlist Title"
                                         size="large"
                                         required
                                     />
-                                    <AiFillPlusCircle
+
+                                    <button
                                         className="create-playlist"
                                         onClick={handleCreatePlaylist}
-                                    />
+                                    >
+                                        <CreateIcon className="create-icon" />
+                                        <div>Create</div>
+                                    </button>
                                 </div>
+                                <h4>Playlists:</h4>
                                 {usersPlaylists.map((playlist) => {
                                     return (
-                                        <button
-                                            key={playlist._id}
-                                            id={playlist._id}
-                                            className="add-playlist"
-                                            onClick={handleAddToPlaylist}
-                                        >
-                                            {playlist.plTitle}
-                                        </button>
+                                        <>
+                                            <div
+                                                key={playlist._id}
+                                                id={playlist._id}
+                                                className="add-playlist"
+                                                onClick={handleAddToPlaylist}
+                                            >
+                                                <img
+                                                    src={playlistIcon}
+                                                    alt="Playlist"
+                                                />
+                                                <div>{playlist.plTitle}</div>
+                                            </div>
+                                        </>
                                     )
                                 })}
                             </Space>
@@ -397,17 +508,25 @@ const SongDetails = ({
                             name="commentText"
                             value={commentText}
                             onChange={getCommentText}
-                            style={{ padding: 10, width: "85%" }}
+                            className="detail-comment"
+                            style={{
+                                padding: 10,
+
+                                border: "1px solid rgb(218, 218, 218)",
+                            }}
                             placeholder="Add a comment..."
                         ></input>
                         <button
+                            className="detail-comment-btn"
                             onClick={addCommentHandler}
                             style={{
-                                borderTop: "1px solid #888888",
-                                borderBottom: "1px solid #888888",
-                                backgroundColor: "#FFFFFF",
-                                width: "15%",
-                                textAlign: "center",
+                                // borderTop: "1px solid #888888",
+                                // borderBottom: "1px solid #888888",
+                                padding: "3px 7px",
+                                fontSize: ".7rem",
+
+                                background: "var(--orange)",
+                                color: "white",
                             }}
                         >
                             COMMENT
@@ -417,28 +536,38 @@ const SongDetails = ({
                 <div
                     className="recommended"
                     style={{
-                        // minWidth: "20%",
-                        background: "#F1EEE9",
-                        borderLeft: "1px solid #434343",
+                        background: "#fff",
+                        // borderLeft: "1px solid grey",
                     }}
                 >
-                    <Divider orientation="left">Recommended</Divider>
+                    {/* <Divider orientation="left">Recommended</Divider> */}
                     <List
+                        style={{ height: "100%" }}
                         header={
-                            <div style={{ display: "flex", flexWrap: "wrap" }}>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    fontWeight: "bold",
+                                }}
+                            >
                                 Here are some songs related to "
                                 {querySong.title}"
                             </div>
                         }
-                        footer={<div>Footer</div>}
+                        // footer={<div>Footer</div>}
                         bordered
                         dataSource={list}
                         renderItem={(item) => (
-                            <List.Item>
-                                <Link to={`/song/${item._id}`}>
-                                    <Typography.Text mark>LINK</Typography.Text>
-                                </Link>{" "}
-                                {item.title} by {item.artist}
+                            <List.Item
+                                className="rec-song"
+                                onClick={() => handleRecSongClick(item)}
+                            >
+                                {item.title}
+                                <br />
+                                <span className="rec-artist">
+                                    {item.artist}
+                                </span>
                             </List.Item>
                         )}
                     />
