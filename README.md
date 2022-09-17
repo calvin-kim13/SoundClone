@@ -145,7 +145,7 @@ The github repository is publicaly viewable. If you wish to contribute to the pr
 
 ---
 
-To view Github repository click [here](https://github.com/lewisemarcus/SoundClone).
+To view Github repository click [here](https://github.com/lewisemarcus/Soundify).
 
 <br>
 
